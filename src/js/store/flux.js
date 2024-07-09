@@ -1,43 +1,104 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
-			]
+			urlBase: "https://playground.4geeks.com/contact/agendas",
+			contacts: [],
+			
 		},
 		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
+			createAgenda: async () =>{
+				try {
+					let response = await fetch(`${getStore().urlBase}/DanielBayona`, {
+						method: 'POST'
+					})
+					if (response.ok) {
+					   console.log("Creado exitosamente");
+					} else{
+						console.log("Error al crear");
+					}
+					
+				} catch (error) {
+					console.log(error);
+				}
 			},
-			loadSomeData: () => {
-				/**
-					fetch().then().then(data => setStore({ "foo": data.bar }))
-				*/
+			getAllContacts: async () =>{
+				try {
+					let response = await fetch(`${getStore().urlBase}/DanielBayona/contacts`);
+					let data = await response.json();
+					if(response.ok){
+						console.log(data.contacts);
+						setStore({
+							contacts: data.contacts,
+						})
+					} else{
+						console.log("No existe el usuario");
+						getActions().createAgenda();
+					}
+				} catch (error) {
+					console.log(error);
+				}
 			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
+			addContact: async (contact) =>{
+				try {
+					let response = await fetch(`${getStore().urlBase}/DanielBayona/contacts`,{
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify(contact)
+					})
 
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
+					if(response.ok){
+						await getActions().getAllContacts()
+						return true
+					} else{
+						console.log('Ha ocurrido un error');
+						return false
+					}
+					
+				} catch (error) {
+					console.log(error);
+				}
+			},
+			deleteContact: async (id, slug = 'DanielBayona') =>{
+				try {
+					let response = await fetch(`${getStore().urlBase}/${slug}/contacts/${id}`,{
+						method: "DELETE"
+					})
 
-				//reset the global store
-				setStore({ demo: demo });
-			}
+					if(response.ok){
+						getActions().getAllContacts();
+						return true;
+					} else{
+						console.log('error al borrar contacto');
+						return false;
+					}
+				} catch (error) {
+					console.log(error);
+					return false;
+				}
+			},
+			updateContact: async (id, updatedContact, slug = 'DanielBayona') => {
+				try {
+				  let response = await fetch(`${getStore().urlBase}/${slug}/contacts/${id}`, {
+					method: "PUT",
+					headers: {
+					  "Content-Type": "application/json",
+					},
+					body: JSON.stringify(updatedContact),
+				  });
+				  if (response.ok) {
+					getActions().getAllContacts();
+					return true;
+				  } else {
+					console.log("error al actualizar contacto");
+					return false;
+				  }
+				} catch (error) {
+				  console.log(error);
+				  return false;
+				}
+			  }  
 		}
 	};
 };
